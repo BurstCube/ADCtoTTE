@@ -28,7 +28,7 @@ jobs:
       versionSpec: '$(python.version)'
   
   - script: pip install -r requirements.txt
-  displayName: 'Install requirements'
+    displayName: 'Install requirements'
 
   - script: python adc2tte.py data/reference/inputs/joe_data.txt
   
