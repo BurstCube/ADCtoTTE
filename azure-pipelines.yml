@@ -10,4 +10,22 @@ trigger:
   paths:
     exclude:
     - azure-pipelines.yml
-      
+
+jobs:
+- job: 'Test'
+  pool:
+    vmImage: 'ubuntu-16.04'
+  strategy:
+    matrix:
+      Python35:
+        python.version: '3.5'
+      Python36:
+        python.version: '3.6'
+
+  steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(python.version)'
+
+  - script: python adc2tte.py data/reference/inputs/joe_data.txt
+  
