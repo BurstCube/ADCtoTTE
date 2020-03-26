@@ -8,7 +8,12 @@ def parseargs():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("infile", help="ACD count file to process", type=argparse.FileType('r'))
-    parser.add_argument("-o", "--outfile", help="Output filename", default="burstcube_tte.fit")
+
+    # Default file name needs to be in a specific format for the old gspec system to load the file
+    # Filename format is defined in python/site-packages/gbm/file.py as the variable REGEX_PATTERN
+    # Pattern is 'glg_<data_type>_<detector>_<trigger>_<version>.fit
+    
+    parser.add_argument("-o", "--outfile", help="Output filename", default="glg_tte_b0_bn123456789_v00.fit")
 
     args = parser.parse_args()
     return args
@@ -55,17 +60,17 @@ if __name__ == '__main__':
         scaledpulse.append([int(x[1]),int(x[3])-int(x[2])])
         
     # Define Energy Channels
-    # Current: 64 channels hardcoded in increments
-    # of 26
+    # Current: 128 channels hardcoded in increments
+    # of 10
     channels = []
     emin = 0 # Min Energy
-    emax = 384 # Max Energy 
+    emax = 1280 # Max Energy 
     i = 1
     
-    while i < 65:
+    while i < 129:
         channels.append([i,emin,emax])
         emin = emax+1
-        emax = emax+6 # Energy Channel Steps defined here
+        emax = emax+10 # Energy Channel Steps defined here
         i += 1
         
     # Match each scaled pulse with an energy channel range
@@ -80,18 +85,35 @@ if __name__ == '__main__':
     primarykeywords = { 'CREATOR' : 'ADCtoTTE v1.0',
                         'FILETYPE' : 'BURSTCUBE PHOTON LIST',
                         'FILE-VER' : '1.0.0',
+                        'FILENAME' : outfile,
                         'DATATYPE' : 'TTE',
                         'TELESCOP' : 'BURSTCUBE',
-                        'INSTRUME' : 'BURSTCUBE'}
+                        'INSTRUME' : 'BURSTCUBE',
+                        'TRIGTIME' : 387128425.854846,
+                        'OBJECT' : 'TESTOBJ',
+                        'RADECSYS' : 'FK5',
+                        'EQUINOX' : 2000.0,
+                        'RA_OBJ' : 30.0000,
+                        'DEC_OBJ' : -15.000,
+                        'ERR_RAD' : 3.000,
+                        'TSTART' : 387128290.1728720,
+                        'TSTOP' : 387128904.582618,
+                        'TRIGTIME' : 387128425.854846,
+                        'HDUCLASS' : 'OGIP',
+                        'HDUCLAS1' : 'EVENTS'}
+    
 
     primaryheader = fits.Header(primarykeywords)
     
     # Construct the output HDUs
     primary_hdu = fits.PrimaryHDU(header=primaryheader)
     ebounds_hdu = bintablehdu_constructor(channels,('CHANNEL','E_MIN','E_MAX'), ('short','float','float'),'EBOUNDS')
-    events_hdu = bintablehdu_constructor(eventpairs,('EVENT','PHA'), ('double','short'),'EVENTS')
-    gti_hdu = bintablehdu_constructor([[tstart,tstop]],('TSTART','TSTOP'), ('double','double'), 'GTI')
+    events_hdu = bintablehdu_constructor(eventpairs,('TIME','PHA'), ('double','short'),'EVENTS')
+    gti_hdu = bintablehdu_constructor([[tstart,tstop]],('START','STOP'), ('double','double'), 'GTI')
     hdulist = fits.HDUList([primary_hdu,ebounds_hdu,events_hdu,gti_hdu])
+
+    # Add additional keywords to headers
+    
     
     # Write out the tte file
     hdulist.writeto(outfile)
